@@ -1,6 +1,8 @@
 package com.weather.forecast.Weather.forecast
 
 import com.weather.forecast.Weather.forecast.DTO.ForecastResponse
+import com.weather.forecast.Weather.forecast.DTO.weatherapi.CoordinateResponse
+import com.weather.forecast.Weather.forecast.db.User
 import com.weather.forecast.Weather.forecast.db.repository.UserRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -12,7 +14,7 @@ import org.springframework.web.server.ResponseStatusException
 
 @RestController
 class ForecastController {
-    @Value("weather.key")
+    @Value("\${weather.key}")
     lateinit var weatherApiKey: String
 
     @Autowired
@@ -23,9 +25,7 @@ class ForecastController {
 
     @GetMapping("/forecast")
     fun getForecastForTmrw(@RequestParam("userId") userId: Long): ForecastResponse {
-        val user = userRepository.findById(userId.toBigInteger())
-
-        if (user.isEmpty) throw ResponseStatusException(HttpStatus.BAD_REQUEST)
+        val user = getUserById(userId)
 
         val forecastResponse = weatherClient.getForecast(
             mapOf(
@@ -37,6 +37,26 @@ class ForecastController {
             )
         )
 
-        return forecastResponse.forecast.last().condition
+        return forecastResponse.daily.last().weather.last()
+    }
+
+    @GetMapping("/coordinates")
+    fun getUserCoordinates(@RequestParam("userId") userId: Long): CoordinateResponse {
+        val user = getUserById(userId)
+
+        val coordinatesResponse = weatherClient.getCoordinates(
+            mapOf(
+                "appid" to weatherApiKey,
+                "q" to user.city
+            )
+        )
+
+        return coordinatesResponse.last()
+    }
+
+    private fun getUserById(userId: Long): User {
+        val user = userRepository.findById(userId.toBigInteger())
+
+        return user.orElseThrow { ResponseStatusException(HttpStatus.BAD_REQUEST) }
     }
 }
