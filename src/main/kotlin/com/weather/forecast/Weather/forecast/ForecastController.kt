@@ -4,6 +4,7 @@ import com.weather.forecast.Weather.forecast.DTO.ForecastResponse
 import com.weather.forecast.Weather.forecast.DTO.weatherapi.CoordinateResponse
 import com.weather.forecast.Weather.forecast.db.User
 import com.weather.forecast.Weather.forecast.db.repository.UserRepository
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
@@ -14,6 +15,8 @@ import org.springframework.web.server.ResponseStatusException
 
 @RestController
 class ForecastController {
+    private val logger = LoggerFactory.getLogger(ForecastController::class.java)
+
     @Value("\${weather.key}")
     lateinit var weatherApiKey: String
 
@@ -44,12 +47,14 @@ class ForecastController {
     fun getUserCoordinates(@RequestParam("userId") userId: Long): CoordinateResponse {
         val user = getUserById(userId)
 
+        logger.debug("Cache miss! Fetching coordinates from weather client")
         val coordinatesResponse = weatherClient.getCoordinates(
             mapOf(
                 "appid" to weatherApiKey,
                 "q" to user.city
             )
         )
+        logger.debug("Caching response from weather client API: {}", coordinatesResponse)
 
         return coordinatesResponse.last()
     }
