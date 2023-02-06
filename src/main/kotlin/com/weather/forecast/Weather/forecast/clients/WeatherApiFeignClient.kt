@@ -1,4 +1,4 @@
-package com.weather.forecast.Weather.forecast
+package com.weather.forecast.Weather.forecast.clients
 
 import com.weather.forecast.Weather.forecast.DTO.weatherapi.CoordinateResponse
 import com.weather.forecast.Weather.forecast.DTO.weatherapi.ForecastResponse

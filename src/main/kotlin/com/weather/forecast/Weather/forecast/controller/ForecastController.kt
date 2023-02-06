@@ -1,8 +1,10 @@
-package com.weather.forecast.Weather.forecast
+package com.weather.forecast.Weather.forecast.controller
 
 import com.weather.forecast.Weather.forecast.DTO.ForecastResponse
 import com.weather.forecast.Weather.forecast.DTO.weatherapi.CoordinateResponse
+import com.weather.forecast.Weather.forecast.clients.WeatherApiFeignClient
 import com.weather.forecast.Weather.forecast.db.User
+import com.weather.forecast.Weather.forecast.db.repository.CoordsRedisRepo
 import com.weather.forecast.Weather.forecast.db.repository.UserRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -26,6 +28,9 @@ class ForecastController {
     @Autowired
     lateinit var userRepository: UserRepository
 
+    @Autowired
+    lateinit var coordsRedisRepo: CoordsRedisRepo
+
     @GetMapping("/forecast")
     fun getForecastForTmrw(@RequestParam("userId") userId: Long): ForecastResponse {
         val user = getUserById(userId)
@@ -47,14 +52,22 @@ class ForecastController {
     fun getUserCoordinates(@RequestParam("userId") userId: Long): CoordinateResponse {
         val user = getUserById(userId)
 
-        logger.debug("Cache miss! Fetching coordinates from weather client")
+        val optionalCoord = coordsRedisRepo.findById(user.city)
+
+        if (optionalCoord.isPresent) {
+            logger.info("Cache hit!")
+            return optionalCoord.get()
+        }
+
+        logger.info("Cache miss! Fetching coordinates from weather client")
         val coordinatesResponse = weatherClient.getCoordinates(
             mapOf(
                 "appid" to weatherApiKey,
                 "q" to user.city
             )
         )
-        logger.debug("Caching response from weather client API: {}", coordinatesResponse)
+        coordsRedisRepo.save(coordinatesResponse.last())
+        logger.info("Caching response from weather client API: {}", coordinatesResponse)
 
         return coordinatesResponse.last()
     }

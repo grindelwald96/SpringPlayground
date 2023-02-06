@@ -1,4 +1,4 @@
-package com.weather.forecast.Weather.forecast
+package com.weather.forecast.Weather.forecast.controller
 
 import com.weather.forecast.Weather.forecast.DTO.LoginRequest
 import com.weather.forecast.Weather.forecast.DTO.SignUpRequest
